@@ -6,11 +6,11 @@ const nextConfig = {
     return [
       {
         source: '/api/upload',
-        destination: 'http://backend:9090/upload',
+        destination: 'https://peerlink-backend-k7va.onrender.com/upload',
       },
       {
         source: '/api/download/:port',
-        destination: 'http://backend:9090/download/:port',
+        destination: 'https://peerlink-backend-k7va.onrender.com/download/:port',
       },
     ];
   },
