@@ -14,6 +14,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>17</maven.compiler.release>
+    <!-- Authentication library versions -->
+    <jjwt.version>0.12.6</jjwt.version>
   </properties>
 
   <dependencyManagement>
@@ -29,6 +31,55 @@
   </dependencyManagement>
 
   <dependencies>
+    <!-- PostgreSQL JDBC Driver -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.3</version>
+    </dependency>
+
+    <!-- HikariCP - High-performance JDBC connection pool -->
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>5.1.0</version>
+    </dependency>
+
+    <!-- ── Authentication ──────────────────────────────────────────────── -->
+    <!-- JJWT API (compile-time surface) -->
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-api</artifactId>
+      <version>${jjwt.version}</version>
+    </dependency>
+    <!-- JJWT implementation (runtime only – do not use its classes directly) -->
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-impl</artifactId>
+      <version>${jjwt.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- JJWT Jackson integration for JSON serialisation (runtime only) -->
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-jackson</artifactId>
+      <version>${jjwt.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- jBCrypt – password hashing -->
+    <dependency>
+      <groupId>org.mindrot</groupId>
+      <artifactId>jbcrypt</artifactId>
+      <version>0.4</version>
+    </dependency>
+
+    <!-- Jackson databind for JSON processing -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.17.2</version>
+    </dependency>
+
     <!-- Apache Commons FileUpload for handling multipart/form-data requests -->
     <dependency>
       <groupId>commons-fileupload</groupId>
@@ -40,6 +91,13 @@
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.15.1</version>
+    </dependency>
+
+    <!-- Java Mail for SMTP -->
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>javax.mail</artifactId>
+      <version>1.6.2</version>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

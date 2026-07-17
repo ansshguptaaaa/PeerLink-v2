@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FiDownload } from 'react-icons/fi';
+import { FiDownload, FiKey, FiAlertCircle } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 
 interface FileDownloadProps {
   onDownload: (port: number) => Promise<void>;
@@ -30,42 +31,65 @@ export default function FileDownload({ onDownload, isDownloading }: FileDownload
   };
   
   return (
-    <div className="space-y-4">
-      <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-        <h3 className="text-lg font-medium text-blue-800 mb-2">Receive a File</h3>
-        <p className="text-sm text-blue-600 mb-0">
-          Enter the invite code shared with you to download the file.
-        </p>
-      </div>
+    <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-purple-500/5 blur-xl pointer-events-none" />
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700 mb-1">
-            Invite Code
+      <h3 className="text-lg font-bold text-white mb-2 flex items-center space-x-2">
+        <span className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
+        <span>Receive a File</span>
+      </h3>
+      <p className="text-xs text-slate-500 mb-6">
+        Enter the invite code (port number) shared with you to connect and download the file.
+      </p>
+      
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="text-left">
+          <label htmlFor="inviteCode" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+            Invite Code / Port
           </label>
-          <input
-            type="text"
-            id="inviteCode"
-            value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value)}
-            placeholder="Enter the invite code (port number)"
-            className="input-field"
-            disabled={isDownloading}
-            required
-          />
-          {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+              <FiKey className="w-4 h-4" />
+            </div>
+            <input
+              type="text"
+              id="inviteCode"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="Enter the invite code (e.g. 9091)"
+              className="w-full pl-10 pr-4 py-3 bg-slate-950/60 border border-slate-850 rounded-xl text-white placeholder-slate-650 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition duration-200 text-sm font-semibold"
+              disabled={isDownloading}
+              required
+            />
+          </div>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2.5 flex items-center space-x-1.5 text-xs text-red-400 font-medium"
+            >
+              <FiAlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{error}</span>
+            </motion.div>
+          )}
         </div>
         
         <button
           type="submit"
-          className="btn-primary flex items-center justify-center w-full"
+          className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-950 transition-all duration-200 flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg shadow-purple-500/10 active:scale-98"
           disabled={isDownloading}
         >
           {isDownloading ? (
-            <span>Downloading...</span>
+            <div className="flex items-center space-x-2">
+              <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>Downloading stream...</span>
+            </div>
           ) : (
             <>
-              <FiDownload className="mr-2" />
+              <FiDownload className="mr-2 w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
               <span>Download File</span>
             </>
           )}

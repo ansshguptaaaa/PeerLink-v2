@@ -35,3 +35,17 @@ yarn-error.log*
 # OS specific
 .DS_Store
 Thumbs.db
+
+.env
+
+auth-code.txt
+
+auth-code..txt
+
+pom-backup.xml
+
+test.txt
+
+ui/tsconfig.tsbuildinfo
+
+54514

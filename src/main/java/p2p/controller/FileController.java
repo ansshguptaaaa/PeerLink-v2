@@ -1,6 +1,14 @@
 package p2p.controller;
 
+import p2p.controller.AuthController;
 import p2p.service.FileSharer;
+import p2p.security.JwtAuthHandler;
+import p2p.model.FileMetadata;
+import p2p.repository.FileMetadataRepository;
+import p2p.repository.FileTransferRepository;
+import p2p.repository.StatsRepository;
+
+
 
 import java.io.*;
 import java.util.UUID;
@@ -21,21 +29,44 @@ public class FileController {
     private final HttpServer server;
     private final String uploadDir;
     private final ExecutorService executorService;
+    private final AuthController authController;
+    private final FileMetadataRepository fileMetadataRepository;
+    private final FileTransferRepository fileTransferRepository;
+    private final StatsRepository statsRepository;
+
 
     public FileController(int port) throws IOException {
         this.fileSharer = new FileSharer();
         this.server = HttpServer.create(new InetSocketAddress(port), 0);
         this.uploadDir = System.getProperty("java.io.tmpdir") + File.separator + "peerlink-uploads";
         this.executorService = Executors.newFixedThreadPool(10);
+        this.authController = new AuthController();
+        this.fileMetadataRepository = new FileMetadataRepository();
+        this.fileTransferRepository = new FileTransferRepository();
+        this.statsRepository = new StatsRepository();
         
         File uploadDirFile = new File(uploadDir);
         if (!uploadDirFile.exists()) {
             uploadDirFile.mkdirs();
         }
         
-        server.createContext("/upload", new UploadHandler());
-        server.createContext("/download", new DownloadHandler());
-        server.createContext("/", new CORSHandler());
+        // Existing P2P routes
+        server.createContext("/upload",   new JwtAuthHandler(new UploadHandler()));
+        server.createContext("/download", new JwtAuthHandler(new DownloadHandler()));
+        server.createContext("/files",    new JwtAuthHandler(new FilesHandler()));
+        server.createContext("/stats",    new JwtAuthHandler(new StatsHandler()));
+        server.createContext("/transfers", new JwtAuthHandler(new TransfersHandler()));
+        server.createContext("/",         new CORSHandler());
+
+        // Authentication routes
+        server.createContext("/signup",  authController.signupHandler());
+        server.createContext("/login",   authController.loginHandler());
+        server.createContext("/refresh", authController.refreshHandler());
+        server.createContext("/send-otp",   authController.sendOtpHandler());
+        server.createContext("/verify-otp", authController.verifyOtpHandler());
+        server.createContext("/forgot-password", authController.forgotPasswordHandler());
+        server.createContext("/verify-reset-otp", authController.verifyResetOtpHandler());
+        server.createContext("/reset-password", authController.resetPasswordHandler());
         
         server.setExecutor(executorService);
     }
@@ -221,6 +252,14 @@ public class FileController {
                 
                 int port = fileSharer.offerFile(filePath);
                 
+                // Save metadata in PostgreSQL
+                String ownerEmail = (String) exchange.getAttribute("userEmail");
+                if (ownerEmail == null) {
+                    ownerEmail = "anonymous";
+                }
+                FileMetadata metadata = new FileMetadata(ownerEmail, filename, port, result.fileContent.length);
+                fileMetadataRepository.save(metadata);
+                
                 String jsonResponse = "{\"port\": " + port + "}";
                 headers.add("Content-Type", "application/json");
                 exchange.sendResponseHeaders(200, jsonResponse.getBytes().length);
@@ -259,6 +298,17 @@ public class FileController {
 
             try {
                 int code = Integer.parseInt(portStr);
+                
+                // Verify file exists in metadata in PostgreSQL
+                if (!fileMetadataRepository.existsByShareCode(code)) {
+                    String response = "Not Found: No file metadata associated with code " + code;
+                    headers.add("Content-Type", "text/plain");
+                    exchange.sendResponseHeaders(404, response.getBytes().length);
+                    try (OutputStream os = exchange.getResponseBody()) {
+                        os.write(response.getBytes());
+                    }
+                    return;
+                }
 
                 String filePath = fileSharer.getFilePath(code);
                 if (filePath == null) {
@@ -302,13 +352,185 @@ public class FileController {
                     }
                 }
 
+
+                String receiverEmail = (String) exchange.getAttribute("userEmail");
+
+                fileMetadataRepository.findByShareCode(code)
+                    .ifPresent(metadata -> {
+                        try {
+                            fileTransferRepository.save(
+                                metadata.getId(),
+                                metadata.getOwnerEmail(),
+                                receiverEmail
+                            );
+                        } catch (Exception ex) {
+                            System.err.println("Transfer save failed: " + ex.getMessage());
+                        }
+                    });
+
             } catch (NumberFormatException e) {
                 String response = "Bad Request: Invalid download code";
                 exchange.sendResponseHeaders(400, response.getBytes().length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(response.getBytes());
                 }
+            } catch (Exception e) {
+                System.err.println("Error processing file download: " + e.getMessage());
+                String response = "Server error: " + e.getMessage();
+                exchange.sendResponseHeaders(500, response.getBytes().length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
             }
         }
     }
+
+    private class FilesHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            Headers headers = exchange.getResponseHeaders();
+            headers.add("Access-Control-Allow-Origin", "*");
+            headers.add("Content-Type", "application/json; charset=UTF-8");
+            
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                String response = "{\"error\":\"Method Not Allowed\"}";
+                exchange.sendResponseHeaders(405, response.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+                return;
+            }
+            
+            try {
+                String ownerEmail = (String) exchange.getAttribute("userEmail");
+                if (ownerEmail == null) {
+                    ownerEmail = "anonymous";
+                }
+                
+                java.util.List<FileMetadata> files = fileMetadataRepository.findByOwnerEmail(ownerEmail);
+                
+                StringBuilder sb = new StringBuilder();
+                sb.append("[");
+                for (int i = 0; i < files.size(); i++) {
+                    FileMetadata f = files.get(i);
+                    sb.append("{");
+                    sb.append("\"id\":").append(f.getId()).append(",");
+                    sb.append("\"fileName\":\"").append(escapeJson(f.getFileName())).append("\",");
+                    sb.append("\"shareCode\":").append(f.getShareCode()).append(",");
+                    sb.append("\"fileSize\":").append(f.getFileSize()).append(",");
+                    sb.append("\"createdAt\":\"").append(formatTimestamp(f.getCreatedAt())).append("\"");
+                    sb.append("}");
+                    if (i < files.size() - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("]");
+                
+                byte[] responseBytes = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(responseBytes);
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching files: " + e.getMessage());
+                String response = "{\"error\":\"Server error: " + escapeJson(e.getMessage()) + "\"}";
+                exchange.sendResponseHeaders(500, response.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+        }
+        
+        private String escapeJson(String s) {
+            if (s == null) return "";
+            return s.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t");
+        }
+        
+        private String formatTimestamp(java.sql.Timestamp t) {
+            if (t == null) return "";
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+            return t.toLocalDateTime().format(formatter);
+        }
+    }
+
+    private class TransfersHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            Headers headers = exchange.getResponseHeaders();
+            headers.add("Access-Control-Allow-Origin", "*");
+            headers.add("Content-Type", "application/json; charset=UTF-8");
+            
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                String response = "{\"error\":\"Method Not Allowed\"}";
+                exchange.sendResponseHeaders(405, response.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+                return;
+            }
+            
+            try {
+                String email = (String) exchange.getAttribute("userEmail");
+                if (email == null) {
+                    email = "anonymous";
+                }
+                
+                java.util.List<p2p.dto.TransferDto> transfers = fileTransferRepository.findTransfersByUser(email);
+                
+                StringBuilder sb = new StringBuilder();
+                sb.append("[");
+                for (int i = 0; i < transfers.size(); i++) {
+                    p2p.dto.TransferDto t = transfers.get(i);
+                    sb.append("{");
+                    sb.append("\"id\":").append(t.getId()).append(",");
+                    sb.append("\"fileName\":\"").append(escapeJson(t.getFileName())).append("\",");
+                    sb.append("\"senderEmail\":\"").append(escapeJson(t.getSenderEmail())).append("\",");
+                    sb.append("\"receiverEmail\":\"").append(escapeJson(t.getReceiverEmail())).append("\",");
+                    sb.append("\"fileSize\":").append(t.getFileSize()).append(",");
+                    sb.append("\"downloadedAt\":\"").append(formatTimestamp(t.getDownloadedAt())).append("\"");
+                    sb.append("}");
+                    if (i < transfers.size() - 1) {
+                        sb.append(",");
+                    }
+                }
+                sb.append("]");
+                
+                byte[] responseBytes = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(responseBytes);
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching transfers: " + e.getMessage());
+                String response = "{\"error\":\"Server error: " + escapeJson(e.getMessage()) + "\"}";
+                exchange.sendResponseHeaders(500, response.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+        }
+        
+        private String escapeJson(String s) {
+            if (s == null) return "";
+            return s.replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t");
+        }
+        
+        private String formatTimestamp(java.sql.Timestamp t) {
+            if (t == null) return "";
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+            return t.toLocalDateTime().format(formatter);
+        }
+    }
 }
+
+
+
+
