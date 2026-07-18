@@ -48,9 +48,9 @@ public final class DatabaseConfig {
      * Creates a {@code DatabaseConfig} by resolving system properties with compile-time fallbacks.
      */
     public DatabaseConfig() {
-        this.jdbcUrl             = System.getProperty("db.url",      DEFAULT_JDBC_URL);
-        this.username            = System.getProperty("db.username", DEFAULT_USERNAME);
-        this.password            = System.getProperty("db.password", DEFAULT_PASSWORD);
+        this.jdbcUrl = System.getenv().getOrDefault("DB_URL", System.getProperty("db.url", DEFAULT_JDBC_URL));
+        this.username = System.getenv().getOrDefault("DB_USERNAME", System.getProperty("db.username", DEFAULT_USERNAME));
+        this.password = System.getenv().getOrDefault("DB_PASSWORD", System.getProperty("db.password", DEFAULT_PASSWORD));
         this.driverClassName     = System.getProperty("db.driver",   DEFAULT_DRIVER);
         this.poolName            = System.getProperty("db.poolName", DEFAULT_POOL_NAME);
 
@@ -105,3 +105,4 @@ public final class DatabaseConfig {
                '}';
     }
 }
+
