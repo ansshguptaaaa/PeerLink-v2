@@ -292,7 +292,7 @@ public class AuthService {
             // Check if there was a recent request (Too many OTP requests: 30 seconds limit)
             EmailVerificationRepository.VerificationRecord record = emailVerificationRepository.getVerification(email);
             if (record != null) {
-                long diffMs = Instant.now().toEpochMilli() - record.getCreatedAt().getTime();
+                long diffMs = Math.max(0, Instant.now().toEpochMilli() - record.getCreatedAt().toInstant().toEpochMilli());
                 if (diffMs < 30 * 1000) {
                     throw new AuthException(
                             AuthException.ErrorCode.TOO_MANY_OTP_REQUESTS,
@@ -366,7 +366,7 @@ public class AuthService {
             // Check if there was a recent request (Too many OTP requests: 30 seconds limit)
             EmailVerificationRepository.VerificationRecord record = emailVerificationRepository.getVerification(email);
             if (record != null) {
-                long diffMs = Instant.now().toEpochMilli() - record.getCreatedAt().getTime();
+                long diffMs = Math.max(0, Instant.now().toEpochMilli() - record.getCreatedAt().toInstant().toEpochMilli());
                 if (diffMs < 30 * 1000) {
                     throw new AuthException(
                             AuthException.ErrorCode.TOO_MANY_OTP_REQUESTS,
@@ -673,3 +673,4 @@ public class AuthService {
         }
     }
 }
+
