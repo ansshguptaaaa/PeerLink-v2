@@ -37,7 +37,9 @@ export default function Home() {
   const [transfers, setTransfers] = useState<any[]>([]);
 
   // Settings Mock States
-  const [apiUrl, setApiUrl] = useState('http://localhost:9090');
+  const [apiUrl, setApiUrl] = useState(
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090'
+); 
   const [maxConnections, setMaxConnections] = useState(5);
   const [secureMode, setSecureMode] = useState(true);
 
