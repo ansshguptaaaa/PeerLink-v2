@@ -577,7 +577,6 @@ public class AuthController {
             case INVALID_OTP:           return 400;
             case OTP_EXPIRED:           return 400;
             case TOO_MANY_OTP_REQUESTS: return 429;
-            case EMAIL_NOT_VERIFIED:    return 400;
             default:                    return 500;
         }
     }

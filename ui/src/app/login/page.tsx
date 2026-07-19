@@ -99,7 +99,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2">
                 <label htmlFor="login-password" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
                   Password
                 </label>

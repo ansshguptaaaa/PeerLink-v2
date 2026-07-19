@@ -131,7 +131,6 @@ public class AuthService {
             INVALID_OTP,
             OTP_EXPIRED,
             TOO_MANY_OTP_REQUESTS,
-            EMAIL_NOT_VERIFIED
         }
 
         private final ErrorCode errorCode;
@@ -235,13 +234,6 @@ public class AuthService {
         validateNotBlank(password, "password");
 
         try {
-            // Guard: Check if email is verified
-            EmailVerificationRepository.VerificationRecord verification = emailVerificationRepository.getVerification(email);
-            if (verification == null || !verification.isVerified()) {
-                throw new AuthException(
-                        AuthException.ErrorCode.EMAIL_NOT_VERIFIED,
-                        "Email is not verified. Please verify your email first.");
-            }
 
             // 1. Guard duplicate e-mail
             if (userRepository.existsByEmail(email)) {
@@ -265,7 +257,6 @@ public class AuthService {
             storeRefreshToken(user.getId(), refreshToken);
 
             // Clean up verification record after successful signup
-            emailVerificationRepository.deleteByEmail(email);
 
             return new AuthResponse(accessToken, refreshToken, email, user.getRole());
 
@@ -450,7 +441,6 @@ public class AuthService {
             userRepository.updatePassword(email, hashedPassword);
 
             // 4. Delete used OTP after successful reset
-            emailVerificationRepository.deleteByEmail(email);
 
         } catch (AuthException e) {
             throw e;
@@ -673,4 +663,5 @@ public class AuthService {
         }
     }
 }
+
 

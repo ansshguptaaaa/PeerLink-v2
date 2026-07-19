@@ -14,56 +14,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
   const [success, setSuccess] = useState('');
-
-  const handleSendOtp = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!email) {
-      setError('Please enter a valid email address first.');
-      return;
-    }
-    setOtpLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/send-otp`, { email });
-      setOtpSent(true);
-      setSuccess('OTP sent successfully to your email.');
-    } catch (err: any) {
-      console.error('Send OTP error:', err);
-      const msg = err.response?.data?.error || 'Failed to send OTP. Please try again.';
-      setError(msg);
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!otp) {
-      setError('Please enter the OTP.');
-      return;
-    }
-    setOtpLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/verify-otp`, { email, otp });
-      setEmailVerified(true);
-      setSuccess('Email verified successfully!');
-    } catch (err: any) {
-      console.error('Verify OTP error:', err);
-      const msg = err.response?.data?.error || 'Invalid or expired OTP. Please try again.';
-      setError(msg);
-    } finally {
-      setOtpLoading(false);
-    }
-  };
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -171,77 +122,13 @@ export default function SignupPage() {
                     required
                     placeholder=""
                     value={email}
-                    disabled={emailVerified}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (emailVerified || otpSent) {
-                        setEmailVerified(false);
-                        setOtpSent(false);
-                        setOtp('');
-                        setSuccess('');
-                      }
-                    }}
+                    
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition duration-200 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
-                {!emailVerified && (
-                  <button
-                    type="button"
-                    id="send-otp-btn"
-                    onClick={handleSendOtp}
-                    disabled={otpLoading || !email}
-                    className="px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800/50 disabled:opacity-50 text-white font-medium rounded-xl text-sm transition duration-200 flex items-center justify-center min-w-[100px]"
-                  >
-                    {otpLoading && !otpSent ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      'Send OTP'
-                    )}
-                  </button>
-                )}
               </div>
-              
-              {emailVerified && (
-                <div id="email-verified-badge" className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-950/50 border border-emerald-800/80 text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  ✓ Email Verified
-                </div>
-              )}
             </div>
-
-            {otpSent && !emailVerified && (
-              <div>
-                <label htmlFor="signup-otp" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-                  Enter OTP
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      id="signup-otp"
-                      type="text"
-                      required
-                      placeholder="Enter 6-digit OTP"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition duration-200 text-sm"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    id="verify-otp-btn"
-                    onClick={handleVerifyOtp}
-                    disabled={otpLoading || !otp}
-                    className="px-4 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800/50 disabled:opacity-50 text-white font-medium rounded-xl text-sm transition duration-200 flex items-center justify-center min-w-[100px]"
-                  >
-                    {otpLoading && otpSent ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      'Verify'
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
 
             <div>
               <label htmlFor="signup-password" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
@@ -274,7 +161,7 @@ export default function SignupPage() {
             <button
               id="signup-submit-btn"
               type="submit"
-              disabled={!emailVerified || isLoading}
+              disabled={isLoading}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-500 hover:to-indigo-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-200 flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {isLoading ? (
@@ -299,5 +186,9 @@ export default function SignupPage() {
     </div>
   );
 }
+
+
+
+
 
 
