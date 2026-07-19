@@ -98,7 +98,7 @@ export default function Home() {
 
   const loadTransfers = async () => {
     try {
-      const res = await api.get('/transfers');
+      const res = await api.get('/api/transfers');
       setTransfers(res.data || []);
     } catch (err) {
       console.error('Error loading transfers:', err);
