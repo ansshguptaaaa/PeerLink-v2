@@ -22,7 +22,7 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
       <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-purple-500/5 blur-xl pointer-events-none" />
 
       <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center justify-between">
-        <span>Recent Activity</span>
+        <span>Transfer History</span>
         <span className="text-[10px] bg-slate-900 border border-slate-850 px-2 py-0.5 rounded text-slate-500 font-semibold normal-case">
           Real-time
         </span>
@@ -79,10 +79,14 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
                   </div>
                 </div>
 
-                {/* Right Side: Status Badge */}
+                {/* Right Side: Action Badge */}
                 <div>
-                  <span className={`text-[9px] font-bold border px-2 py-0.5 rounded-md ${statusColors[activity.status] || statusColors.Completed}`}>
-                    {activity.status}
+                  <span className={`text-[9px] font-bold border px-2 py-0.5 rounded-md ${
+                    isShared 
+                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+                      : 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                  }`}>
+                    {activity.action}
                   </span>
                 </div>
               </motion.div>
