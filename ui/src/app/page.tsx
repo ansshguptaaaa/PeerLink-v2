@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/utils/api';
@@ -14,7 +13,6 @@ import FileDownload from '@/components/FileDownload';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiFolder, FiLock, FiInfo, FiSliders, FiActivity, FiServer, FiMenu, FiClock, FiX, FiGrid, FiShare2, FiDownload } from 'react-icons/fi';
 import { formatFileSize } from '@/utils/file';
-
 export default function Home() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,7 +24,6 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [port, setPort] = useState<number | null>(null);
-
   // Persistent shared files from PostgreSQL database
   const [sharedFiles, setSharedFiles] = useState<any[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -35,14 +32,12 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [transfers, setTransfers] = useState<any[]>([]);
-
   // Settings Mock States
   const [apiUrl, setApiUrl] = useState(
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9090'
 ); 
   const [maxConnections, setMaxConnections] = useState(5);
   const [secureMode, setSecureMode] = useState(true);
-
   // Verify authentication on component mount
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -55,36 +50,21 @@ export default function Home() {
       setUserEmail(email || 'User');
     }
   }, [router]);
-
   // Load files on page mount
   useEffect(() => {
     loadFiles();
     loadStats();
     loadTransfers();
   }, []);
-
   const loadFiles = async () => {
     try {
       const res = await api.get('/api/files');
       const files = res.data || [];
-
       setSharedFiles(files);
-
-      setActivities(
-        files.map((file: any) => ({
-          id: file.id.toString(),
-          filename: file.fileName,
-          action: 'Shared',
-          timestamp: new Date(file.createdAt).toLocaleString(),
-          status: 'Completed',
-          size: formatFileSize(file.fileSize || 0)
-        }))
-      );
     } catch (err) {
       console.error(err);
     }
   };
-
   const loadStats = async () => {
     try {
       const res = await api.get('/api/stats');
@@ -95,16 +75,26 @@ export default function Home() {
       console.error('Error loading stats:', err);
     }
   };
-
   const loadTransfers = async () => {
     try {
       const res = await api.get('/api/transfers');
       setTransfers(res.data || []);
+      setActivities(
+        (res.data || []).map((t: any) => ({
+          id: t.id.toString(),
+          filename: t.fileName,
+          action: t.senderEmail === localStorage.getItem('userEmail')
+            ? 'Shared'
+            : 'Received',
+          timestamp: new Date(t.downloadedAt).toLocaleString(),
+          status: 'Completed',
+          size: formatFileSize(t.fileSize || 0)
+        }))
+      );
     } catch (err) {
       console.error('Error loading transfers:', err);
     }
   };
-
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -112,7 +102,6 @@ export default function Home() {
     localStorage.removeItem('userRole');
     router.push('/login');
   };
-
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
     setIsUploading(true);
@@ -130,7 +119,6 @@ export default function Home() {
       
       const allocatedPort = response.data.port;
       setPort(allocatedPort);
-
       // Immediately append file to sharedFiles
       const newFile = {
         id: allocatedPort, // temporary ID
@@ -139,7 +127,6 @@ export default function Home() {
         createdAt: new Date().toISOString()
       };
       setSharedFiles(prev => [newFile, ...prev]);
-
       // Immediately append activity
       const newActivity: Activity = {
         id: allocatedPort.toString(),
@@ -150,12 +137,10 @@ export default function Home() {
         size: formatFileSize(file.size)
       };
       setActivities(prev => [newActivity, ...prev]);
-
       // Refresh files list from PostgreSQL in the background
       await loadFiles();
       await loadStats();
       await loadTransfers();
-
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Failed to upload file. Please try again.');
@@ -163,7 +148,6 @@ export default function Home() {
       setIsUploading(false);
     }
   };
-
   const handleRefreshCode = async () => {
     if (uploadedFile) {
       await handleFileUpload(uploadedFile);
@@ -207,12 +191,10 @@ export default function Home() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-
       // Refresh files list
       await loadFiles();
       await loadStats();
       await loadTransfers();
-
     } catch (error) {
       console.error('Error downloading file:', error);
       alert('Failed to download file. Please check the invite code and try again.');
@@ -220,10 +202,8 @@ export default function Home() {
       setIsDownloading(false);
     }
   };
-
   const filesSharedCount = stats.shared;
   const filesReceivedCount = stats.received;
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950">
@@ -234,7 +214,6 @@ export default function Home() {
       </div>
     );
   }
-
   // View Components Renderers
   const renderViewContent = () => {
     switch (activeView) {
@@ -282,7 +261,6 @@ export default function Home() {
             )}
           </div>
         );
-
       case 'receive':
         return (
           <FileDownload 
@@ -290,7 +268,6 @@ export default function Home() {
             isDownloading={isDownloading} 
           />
         );
-
       case 'files':
         return (
           <motion.div
@@ -341,7 +318,6 @@ export default function Home() {
             </div>
           </motion.div>
         );
-
       case 'transfers':
         return (
           <motion.div
@@ -356,7 +332,6 @@ export default function Home() {
             <p className="text-xs text-slate-500 mb-6">
               Real-time monitoring of uploads and downloads currently streaming directly to peers.
             </p>
-
             <div className="space-y-4">
               {/* If uploader is loading */}
               {isUploading && (
@@ -382,7 +357,6 @@ export default function Home() {
                   </div>
                 </div>
               )}
-
               {/* If downloader is loading */}
               {isDownloading && (
                 <div className="p-4 bg-slate-950/60 border border-slate-850 rounded-xl space-y-3">
@@ -407,7 +381,6 @@ export default function Home() {
                   </div>
                 </div>
               )}
-
               {!isUploading && !isDownloading && (
                 <div className="h-40 flex flex-col items-center justify-center text-center text-slate-500 space-y-2 border border-slate-800/40 rounded-xl bg-slate-950/20">
                   <FiServer className="w-6 h-6 opacity-30 text-slate-400" />
@@ -418,7 +391,6 @@ export default function Home() {
             </div>
           </motion.div>
         );
-
       case 'settings':
         return (
           <motion.div
@@ -435,7 +407,6 @@ export default function Home() {
                 Manage your workspace options, local API endpoint config, and tunnel constraints.
               </p>
             </div>
-
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Backend API Endpoint</label>
@@ -448,7 +419,6 @@ export default function Home() {
                 />
                 <p className="text-[10px] text-slate-650">Configured from .env.local variables dynamically.</p>
               </div>
-
               <div className="space-y-2">
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Maximum Seeding Connections</label>
                 <div className="flex items-center space-x-4">
@@ -463,7 +433,6 @@ export default function Home() {
                   <span className="font-mono text-sm font-bold text-white bg-slate-950 px-3 py-1 border border-slate-850 rounded-lg">{maxConnections} peers</span>
                 </div>
               </div>
-
               <div className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-slate-850 rounded-xl">
                 <div className="space-y-0.5 text-left">
                   <p className="text-xs font-bold text-slate-200">Force JWT Validation</p>
@@ -481,21 +450,17 @@ export default function Home() {
             </div>
           </motion.div>
         );
-
       default:
         return null;
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex relative overflow-hidden">
       {/* Absolute Decorative background glows */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/5 blur-[120px] pointer-events-none" />
-
       {/* LEFT SIDEBAR */}
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
-
       {/* RIGHT SIDE / MAIN CONSOLE */}
       <div className="flex-grow flex flex-col min-w-0 overflow-x-hidden">
         <Navbar userEmail={userEmail} onLogout={handleLogout} />
@@ -507,7 +472,6 @@ export default function Home() {
             <div className="lg:col-span-2 space-y-6">
               {renderViewContent()}
             </div>
-
             {/* Metrics Panel Column (Right) - Hidden on mobile, shown on desktop */}
             <div className="hidden lg:block space-y-6">
               {/* Right Panel Cards */}
@@ -522,7 +486,6 @@ export default function Home() {
           </div>
         </main>
       </div>
-
       {/* Mobile Bottom Navigation Bar - Visible only on mobile (<768px) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-950/80 backdrop-blur-md border-t border-slate-900 py-3 px-6 flex justify-around items-center shadow-xl">
         <button
@@ -536,7 +499,6 @@ export default function Home() {
           <FiActivity className="w-5 h-5" />
           <span className="text-[10px] font-bold uppercase tracking-wider">Stats</span>
         </button>
-
         <button
           onClick={() => {
             setIsMenuOpen(true);
@@ -548,7 +510,6 @@ export default function Home() {
           <FiMenu className="w-5 h-5" />
           <span className="text-[10px] font-bold uppercase tracking-wider">Menu</span>
         </button>
-
         <button
           onClick={() => {
             setIsHistoryOpen(true);
@@ -561,7 +522,6 @@ export default function Home() {
           <span className="text-[10px] font-bold uppercase tracking-wider">History</span>
         </button>
       </div>
-
       {/* Mobile Stats Drawer */}
       <AnimatePresence>
         {isStatsOpen && (
@@ -592,7 +552,6 @@ export default function Home() {
           </>
         )}
       </AnimatePresence>
-
       {/* Mobile Menu (Sidebar Drawer) */}
       <AnimatePresence>
         {isMenuOpen && (
@@ -658,7 +617,6 @@ export default function Home() {
                   })}
                 </nav>
               </div>
-
               {/* Bottom Card */}
               <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-4">
                 <p className="text-xs font-bold text-slate-200">Secure & Private</p>
@@ -668,7 +626,6 @@ export default function Home() {
           </>
         )}
       </AnimatePresence>
-
       {/* Mobile History Drawer */}
       <AnimatePresence>
         {isHistoryOpen && (
@@ -734,4 +691,3 @@ export default function Home() {
     </div>
   );
 }
-
