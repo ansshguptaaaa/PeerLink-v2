@@ -69,6 +69,17 @@ export default function Home() {
       const files = res.data || [];
 
       setSharedFiles(files);
+
+      setActivities(
+        files.map((file: any) => ({
+          id: file.id.toString(),
+          filename: file.fileName,
+          action: 'Shared',
+          timestamp: new Date(file.createdAt).toLocaleString(),
+          status: 'Completed',
+          size: formatFileSize(file.fileSize || 0)
+        }))
+      );
     } catch (err) {
       console.error(err);
     }
@@ -88,24 +99,7 @@ export default function Home() {
   const loadTransfers = async () => {
     try {
       const res = await api.get('/transfers');
-      const transferData = res.data || [];
-      setTransfers(transferData);
-
-      // Build activities from transfers (same data source as mobile Transfer History)
-      const email = localStorage.getItem('userEmail') || userEmail;
-      setActivities(
-        transferData.map((t: any) => {
-          const isSender = t.senderEmail === email;
-          return {
-            id: t.id.toString(),
-            filename: t.fileName,
-            action: isSender ? 'Shared' : 'Received',
-            timestamp: new Date(t.downloadedAt).toLocaleString(),
-            status: 'Completed',
-            size: t.fileSize ? formatFileSize(t.fileSize) : undefined,
-          } as Activity;
-        })
-      );
+      setTransfers(res.data || []);
     } catch (err) {
       console.error('Error loading transfers:', err);
     }
@@ -146,7 +140,16 @@ export default function Home() {
       };
       setSharedFiles(prev => [newFile, ...prev]);
 
-
+      // Immediately append activity
+      const newActivity: Activity = {
+        id: allocatedPort.toString(),
+        filename: file.name,
+        action: 'Shared',
+        timestamp: new Date().toLocaleString(),
+        status: 'Completed',
+        size: formatFileSize(file.size)
+      };
+      setActivities(prev => [newActivity, ...prev]);
 
       // Refresh files list from PostgreSQL in the background
       await loadFiles();
