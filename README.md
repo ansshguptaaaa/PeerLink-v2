@@ -1,212 +1,340 @@
-# PeerLink - P2P File Sharing Application
+# 🚀 PeerLink - Secure File Sharing Platform
 
-PeerLink is a peer-to-peer file sharing application that allows users to share files directly between devices using a simple invite code system.
+PeerLink is a secure full-stack file sharing platform that enables users to upload, share, and download files using invite codes. The platform provides authentication, transfer history tracking, persistent storage, and a modern responsive dashboard.
 
-## Project Structure
+Built with **Java**, **Next.js**, **PostgreSQL**, and **Docker**, PeerLink focuses on secure and seamless peer-to-peer style file sharing.
 
-- `src/main/java/p2p`: Java backend code
-  - `App.java`: Main application entry point
-  - `controller/`: API controllers
-  - `service/`: Business logic services
-  - `utils/`: Utility classes
-- `ui/`: Next.js frontend application
-  - `src/app`: Next.js app router pages
-  - `src/components`: React components
+---
 
-## Features
+## ✨ Features
 
-- Drag and drop file upload
-- File sharing via invite codes (port numbers)
-- File downloading using invite codes
-- Modern, responsive UI
-- Direct peer-to-peer file transfer
+### 🔐 Authentication
+- User Signup & Login
+- JWT-based Authentication
+- Access & Refresh Token Management
+- Protected APIs and Secure Sessions
+- BCrypt Password Hashing
 
-## Prerequisites
+### 📁 File Sharing
+- Upload Files Securely
+- Generate Share/Invite Codes
+- Download Files Using Share Codes
+- Sent & Received File Tracking
+- Persistent Transfer History
 
-- Java 11+ (for the backend)
-- Node.js 18+ and npm (for the frontend)
-- Maven (for building the Java project)
+### 📊 Dashboard
+- Total Shared Files
+- Total Transfers
+- Recent Activity Tracking
+- Shared & Received History
+- Responsive Modern UI
 
-## Getting Started
+### ☁️ Deployment & DevOps
+- Dockerized Frontend & Backend
+- Cloud Deployment Support
+- Environment-based Configuration
 
-### Quick Start
+---
 
-#### Linux/macOS:
+# 🏗 System Architecture
+
+```text
+┌─────────────────────┐
+│     Next.js UI      │
+│      Frontend       │
+└──────────┬──────────┘
+           │ REST APIs + JWT
+           ▼
+┌─────────────────────┐
+│    Java Backend     │
+│   HttpServer APIs   │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│    PostgreSQL DB    │
+│                     │
+│ • Users             │
+│ • File Metadata     │
+│ • File Transfers    │
+│ • Refresh Tokens    │
+└─────────────────────┘
+```
+
+---
+
+# 🛠 Tech Stack
+
+## Frontend
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Axios
+- Framer Motion
+
+## Backend
+- Java 17
+- Maven
+- Java HttpServer
+- JWT
+- BCrypt
+- HikariCP
+
+## Database
+- PostgreSQL
+
+## DevOps & Deployment
+- Docker
+- Docker Compose
+- Render
+- Vercel
+- Git & GitHub
+
+---
+
+# 📂 Project Structure
+
+```text
+PeerLink
+│
+├── src/                        # Java Backend
+│   ├── auth
+│   ├── controller
+│   ├── db
+│   ├── model
+│   ├── repository
+│   └── service
+│
+├── ui/                         # Next.js Frontend
+│   ├── src/app
+│   ├── src/components
+│   └── src/utils
+│
+├── Dockerfile.backend
+├── Dockerfile.frontend
+├── docker-compose.yml
+├── pom.xml
+└── README.md
+```
+
+---
+
+# 🗄 Database Schema
+
+## Users Table
+
+| Column | Type |
+|---------|------|
+| id | BIGSERIAL |
+| email | VARCHAR |
+| password_hash | TEXT |
+| created_at | TIMESTAMP |
+
+---
+
+## Refresh Tokens Table
+
+| Column | Type |
+|---------|------|
+| id | BIGSERIAL |
+| user_email | VARCHAR |
+| token | TEXT |
+| expiry_date | TIMESTAMP |
+
+---
+
+## File Metadata Table
+
+| Column | Type |
+|---------|------|
+| id | BIGSERIAL |
+| file_name | VARCHAR |
+| owner_email | VARCHAR |
+| share_code | VARCHAR |
+| file_size | BIGINT |
+| created_at | TIMESTAMP |
+
+---
+
+## File Transfers Table
+
+| Column | Type |
+|---------|------|
+| id | BIGSERIAL |
+| file_name | VARCHAR |
+| sender_email | VARCHAR |
+| receiver_email | VARCHAR |
+| file_size | BIGINT |
+| downloaded_at | TIMESTAMP |
+
+---
+
+# 🔗 API Endpoints
+
+## Authentication APIs
+
+```http
+POST /signup
+POST /login
+POST /refresh
+```
+
+---
+
+## File APIs
+
+```http
+POST /upload
+GET  /files
+GET  /stats
+GET  /transfers
+GET  /download/{shareCode}
+```
+
+---
+
+# ⚙ Environment Variables
+
+## Backend (.env)
+
+```env
+DB_URL=
+DB_USERNAME=
+DB_PASSWORD=
+
+JWT_SECRET=
+```
+
+---
+
+## Frontend (.env.local)
+
+```env
+NEXT_PUBLIC_API_URL=
+```
+
+---
+
+# 🚀 Running Locally
+
+## Clone Repository
+
 ```bash
-./start.sh
+git clone https://github.com/ansshguptaaaa/PeerLink.git
+cd PeerLink
 ```
 
-#### Windows:
+---
+
+## Backend Setup
+
 ```bash
-start.bat
+mvn clean package
+java -jar target/p2p-1.0-SNAPSHOT.jar
 ```
 
-These scripts will build the Java backend, start the server, and launch the frontend development server.
+Backend:
 
-### Manual Setup
-
-#### Backend Setup
-
-1. Build the Java project:
-   ```bash
-   mvn clean package
-   ```
-
-2. Run the backend server:
-   ```bash
-   java -jar target/p2p-1.0-SNAPSHOT.jar
-   ```
-
-   The backend server will start on port 8080.
-
-#### Frontend Setup
-
-1. Install dependencies:
-   ```bash
-   cd ui
-   npm install
-   ```
-
-2. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-   The frontend will be available at [http://localhost:3000](http://localhost:3000).
-
-## How It Works
-
-1. **File Upload**:
-   - User uploads a file through the UI
-   - The file is sent to the Java backend
-   - The backend assigns a unique port number (invite code)
-   - The backend starts a file server on that port
-
-2. **File Sharing**:
-   - The user shares the invite code with another user
-   - The other user enters the invite code in their UI
-
-3. **File Download**:
-   - The UI connects to the specified port
-   - The file is transferred directly from the host to the recipient
-
-## Architecture
-
-```
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│             │      │             │      │             │
-│  Next.js UI │◄────►│ Java Server │◄────►│ Peer Device │
-│             │      │             │      │             │
-└─────────────┘      └─────────────┘      └─────────────┘
+```text
+http://localhost:9090
 ```
 
-## Low Level Design (LLD)
+---
 
-```mermaid
-classDiagram
-    %% Frontend Components
-    class NextJSApp {
-        +handleFileUpload()
-        +handleFileDownload()
-        +connectToPeer()
-    }
-    
-    class FileUploadComponent {
-        +handleDragDrop()
-        +validateFile()
-        +uploadFile()
-    }
-    
-    class FileDownloadComponent {
-        +enterInviteCode()
-        +downloadFile()
-        +showProgress()
-    }
+## Frontend Setup
 
-    %% Backend Components
-    class App {
-        +main()
-        +startServer()
-    }
-    
-    class FileController {
-        +uploadFile()
-        +generateInviteCode()
-        +validateInviteCode()
-    }
-    
-    class FileService {
-        +storeFile()
-        +createFileServer()
-        +handleFileTransfer()
-    }
-    
-    class FileUtils {
-        +validateFile()
-        +generatePort()
-        +cleanupResources()
-    }
-
-    %% Relationships
-    NextJSApp --> FileUploadComponent
-    NextJSApp --> FileDownloadComponent
-    FileUploadComponent --> FileController
-    FileDownloadComponent --> FileController
-    FileController --> FileService
-    FileService --> FileUtils
-
-    %% Data Flow
-    class DataFlow {
-        FileUpload
-        FileDownload
-        InviteCode
-        PortNumber
-    }
-
-    %% Component Notes
-    note for NextJSApp "Handles UI state and user interactions"
-    note for FileController "REST API endpoints for file operations"
-    note for FileService "Core business logic for file handling"
-    note for FileUtils "Utility functions for file operations"
+```bash
+cd ui
+npm install
+npm run dev
 ```
 
-### Component Details
+Frontend:
 
-1. **Frontend Components**
-   - `NextJSApp`: Main application component managing state and routing
-   - `FileUploadComponent`: Handles drag-and-drop file uploads
-   - `FileDownloadComponent`: Manages file downloads using invite codes
+```text
+http://localhost:3000
+```
 
-2. **Backend Components**
-   - `App`: Main application entry point and server initialization
-   - `FileController`: REST API endpoints for file operations
-   - `FileService`: Core business logic for file handling
-   - `FileUtils`: Utility functions for file validation and port management
+---
 
-3. **Data Flow**
-   - File uploads are handled through drag-and-drop
-   - Invite codes (port numbers) are generated for sharing
-   - Direct peer-to-peer file transfer using WebSocket connections
+# 🐳 Docker Setup
 
-## Security Considerations
+Run the complete application:
 
-- This is a demo application and does not include encryption or authentication
-- For production use, consider adding:
-  - File encryption
-  - User authentication
-  - HTTPS support
-  - Port validation and security
+```bash
+docker compose up --build
+```
 
-## Deployment
+---
 
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+# 📸 Main Functionalities
 
-Options include:
-- Local network deployment
-- Docker deployment (using provided Dockerfile.backend, Dockerfile.frontend, and docker-compose.yml)
-- Cloud deployment (Heroku, Railway, Vercel, Netlify)
-- VPS deployment
+✅ User Authentication
 
-## License
+✅ Secure File Upload
 
-MIT
+✅ Invite Code Based Sharing
+
+✅ Download Using Share Codes
+
+✅ Transfer History Tracking
+
+✅ Dashboard Analytics
+
+✅ PostgreSQL Persistence
+
+✅ Dockerized Deployment
+
+---
+
+# 📈 Future Improvements
+
+- One-to-Many File Sharing
+- Redis Caching
+- CI/CD using GitHub Actions
+- Kubernetes Deployment
+- Real-time Notifications
+- Expiring Share Links
+- File Encryption at Rest
+
+---
+
+# 📄 Resume Description
+
+> Developed PeerLink, a secure full-stack file sharing platform using Java, Next.js, PostgreSQL, and Docker. Implemented JWT authentication, invite-code based file sharing, persistent transfer history, and cloud deployment using Render and Vercel.
+
+---
+
+# 🎯 Key Learnings
+
+- REST API Development in Java
+- JWT Authentication & Authorization
+- PostgreSQL Database Design
+- Docker Containerization
+- Full-Stack Deployment Workflow
+- Cloud-based Application Hosting
+
+---
+
+# 🌐 Deployment
+
+### Frontend
+https://peer-link-v2.vercel.app
+
+### Backend
+https://peerlink-backend-k7va.onrender.com
+
+---
+
+# 👨‍💻 Author
+
+**Ansh Gupta**
+
+- GitHub: https://github.com/ansshguptaaaa
+  
+
+---
+
+# ⭐ Support
+
+If you like this project, please consider giving it a **Star ⭐** on GitHub.
